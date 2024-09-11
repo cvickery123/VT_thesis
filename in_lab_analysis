@@ -148,3 +148,16 @@ power.df<-tibble(pool=poolgroup2.list,
        montecarlo.power=unlist(montecarlo.powers$power), 
        mcR0=montecarlo.powers$R0, 
        mcR1=montecarlo.powers$R1)
+
+##graphs
+colpal.poolgroup2<-c("indianred1","firebrick1", "#CD5555", "darkgreen","green3", "orchid", "dodgerblue1", "deepskyblue2")
+power.df %>% mutate(across(pool, factor, levels=poolgroup2.list)) %>% ggplot() + 
+  geom_point(aes(x=ttest.power, y=montecarlo.power, color=pool))+
+  theme_bw() + 
+  labs(x="T-Test (Normal Distribution)", y="Monte Carlo (Non-Normal Distribution)", 
+       title="Powers given existing sample sizes for carbon pools", subtitle="alpha=0.1, effect size=(1.004*mean - mean)/sd") +
+  scale_color_manual(values=colpal.poolgroup2) +
+  geom_smooth(method='lm', aes(x=ttest.power, y=montecarlo.power), se=T, color="gray70", linetype=1, alpha=0.3) #+ 
+  #annotate("text", label="Adjusted R^2=0.9997", x=0.25, y=1)+
+  #annotate("text", label="y=1.01x-0.007", x=0.25, y=0.95)
+summary(lm(power.df$montecarlo.power~power.df$ttest.power)) 
