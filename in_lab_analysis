@@ -1,0 +1,150 @@
+##load and format data
+kgperm2_nona<- write.csv("loblolly_data_fia_srdb_pm_iscn_ltsp.csv")
+
+prettybins<-c('0-10', '0-15', '10-20', '0-20', '20-30','20-40', '0-40','20-50','0-50', '50-100','0-100')
+poolgroup2.list<-c("Harvest Pile", #"Woody Down Dead", 
+                   "Coarse Woody Debris", "FWD, Litter, and O Horizon", "Coarse Roots", "Fine Roots","Belowground Detritus", "Mineral Soil")
+
+kgperm2_nona$poolgroup2<-ifelse(kgperm2_nona$pool=="roots", "Coarse Roots", 
+                               ifelse(kgperm2_nona$pool=="fine_roots", "Fine Roots", 
+                                      ifelse(kgperm2_nona$pool=="coarse_roots", "Coarse Roots", 
+                                             ifelse(kgperm2_nona$pool=="MIN_2", "Mineral Soil", 
+                                                    ifelse(kgperm2_nona$pool=="MIN_1", "Mineral Soil", 
+                                                           ifelse(kgperm2_nona$pool=="carbon_soil_org", "Mineral Soil", 
+                                                                  ifelse(kgperm2_nona$pool=="total carbon", "Mineral Soil", 
+                                                                         ifelse(kgperm2_nona$pool=="total_detritus", "TOOBROAD", 
+                                                                                ifelse(kgperm2_nona$pool=="soil_detritus", "Belowground Detritus", 
+                                                                                       ifelse(kgperm2_nona$pool=="belowground_carbon", "TOOBROAD", 
+                                                                                              ifelse(kgperm2_nona$pool=="pile", "Harvest Pile",
+                                                                                                     ifelse(kgperm2_nona$pool=="carbon_down_dead", "Woody Down Dead", 
+                                                                                                            ifelse(kgperm2_nona$pool=="coarsewoodydebris", "Coarse Woody Debris", "FWD, Litter, and O Horizon")))))))))))))
+
+
+##t-test analysis
+output.norm<-list()
+output.nonnorm<-list()
+for(p in poolgroup2.list){
+  #statistics for tests
+  n.temp<-kgperm2_nona %>% filter(poolgroup2==p) %>% nrow()
+  mu0.temp<-kgperm2_nona %>% filter(poolgroup2==p) %>% summarize(mean(carbon_kgperm2)) %>% as.numeric()
+  sd.temp<-kgperm2_nona %>% filter(poolgroup2==p) %>% summarize(sd(carbon_kgperm2)) %>% as.numeric()
+  mu1.temp<-mu0.temp * 1.004
+  d.temp<-(mu1.temp-mu0.temp)/sd.temp
+  pool.temp<-kgperm2_nona %>% filter(poolgroup2==p)
+  skew.temp<-skewness(pool.temp$carbon_kgperm2)
+  kurt.temp<-kurtosis(pool.temp$carbon_kgperm2)
+  
+  #tests
+  output.norm[[p]]<-pwr.t.test(n=n.temp, d=d.temp, sig.level=0.1, power=NULL, type="one.sample", alternative="two.sided")
+  #output.nonnorm[[p]]<-wp.mc.t(n=n.temp, R0=10000, R1=1000, mu0=mu0.temp, mu1=mu1.temp, sd=sd.temp, skewness=skew.temp, kurtosis=kurt.temp, alpha=0.1, type="one.sample", alternative="two.sided")
+  
+  #curious
+  if(skew.temp<2 & kurt.temp<7)
+    message(paste(p), " is normally distributed.")
+  if(skew.temp>2 | kurt.temp>7)
+    message(paste(p), " is NOT normally distributed.")
+}
+str(output.norm)
+t.test.powers<-data.frame(do.call(rbind,output.norm))
+t.test.powers$poolgroup2<-poolgroup2.list
+
+##Monte Carlo Analysis
+{n.temp<-kgperm2_nona %>% filter(poolgroup2=="Harvest Pile") %>% nrow()
+  mu0.temp<-kgperm2_nona %>% filter(poolgroup2=="Harvest Pile") %>% summarize(mean(carbon_kgperm2)) %>% as.numeric()
+  sd.temp<-kgperm2_nona %>% filter(poolgroup2=="Harvest Pile") %>% summarize(sd(carbon_kgperm2)) %>% as.numeric()
+  mu1.temp<-mu0.temp * 1.004
+  pool.temp<-kgperm2_nona %>% filter(poolgroup2=="Harvest Pile")
+  skew.temp<-skewness(pool.temp$carbon_kgperm2)
+  kurt.temp<-kurtosis(pool.temp$carbon_kgperm2)
+  output.nonnorm.pile<-wp.mc.t(n=n.temp, #R0=10000, R1=1000, 
+                                   mu0=mu0.temp, mu1=mu1.temp, sd=sd.temp, skewness=skew.temp, kurtosis=kurt.temp, alpha=0.1, type="one.sample", alternative="two.sided")
+}
+
+{n.temp<-kgperm2_nona %>% filter(poolgroup2=="Coarse Woody Debris") %>% nrow()
+  mu0.temp<-kgperm2_nona %>% filter(poolgroup2=="Coarse Woody Debris") %>% summarize(mean(carbon_kgperm2)) %>% as.numeric()
+  sd.temp<-kgperm2_nona %>% filter(poolgroup2=="Coarse Woody Debris") %>% summarize(sd(carbon_kgperm2)) %>% as.numeric()
+  mu1.temp<-mu0.temp * 1.004
+  pool.temp<-kgperm2_nona %>% filter(poolgroup2=="Coarse Woody Debris")
+  skew.temp<-skewness(pool.temp$carbon_kgperm2)
+  kurt.temp<-kurtosis(pool.temp$carbon_kgperm2)
+  output.nonnorm.cwd<-wp.mc.t(n=n.temp, R0=10000, R1=1000, 
+                              mu0=mu0.temp, mu1=mu1.temp, sd=sd.temp, skewness=skew.temp, kurtosis=kurt.temp, alpha=0.1, type="one.sample", alternative="two.sided")
+}
+
+{n.temp<-kgperm2_nona %>% filter(poolgroup2=="FWD, Litter, and O Horizon") %>% nrow()
+  mu0.temp<-kgperm2_nona %>% filter(poolgroup2=="FWD, Litter, and O Horizon") %>% summarize(mean(carbon_kgperm2)) %>% as.numeric()
+  sd.temp<-kgperm2_nona %>% filter(poolgroup2=="FWD, Litter, and O Horizon") %>% summarize(sd(carbon_kgperm2)) %>% as.numeric()
+  mu1.temp<-mu0.temp * 1.004
+  pool.temp<-kgperm2_nona %>% filter(poolgroup2=="FWD, Litter, and O Horizon")
+  skew.temp<-skewness(pool.temp$carbon_kgperm2)
+  kurt.temp<-kurtosis(pool.temp$carbon_kgperm2)
+  output.nonnorm.FFO<-wp.mc.t(n=n.temp, R0=10000, R1=1000, 
+                              mu0=mu0.temp, mu1=mu1.temp, sd=sd.temp, skewness=skew.temp, kurtosis=kurt.temp, alpha=0.1, type="one.sample", alternative="two.sided")
+}
+
+{n.temp<-kgperm2_nona %>% filter(poolgroup2=="Coarse Roots") %>% nrow()
+  mu0.temp<-kgperm2_nona %>% filter(poolgroup2=="Coarse Roots") %>% summarize(mean(carbon_kgperm2)) %>% as.numeric()
+  sd.temp<-kgperm2_nona %>% filter(poolgroup2=="Coarse Roots") %>% summarize(sd(carbon_kgperm2)) %>% as.numeric()
+  mu1.temp<-mu0.temp * 1.004
+  pool.temp<-kgperm2_nona %>% filter(poolgroup2=="Coarse Roots")
+  skew.temp<-skewness(pool.temp$carbon_kgperm2)
+  kurt.temp<-kurtosis(pool.temp$carbon_kgperm2)
+  output.nonnorm.coarseroots<-wp.mc.t(n=n.temp, #R0=100, R1=100, 
+                              mu0=mu0.temp, mu1=mu1.temp, sd=sd.temp, skewness=skew.temp, kurtosis=kurt.temp, alpha=0.1, type="one.sample", alternative="two.sided")
+}
+
+{n.temp<-kgperm2_nona %>% filter(poolgroup2=="Fine Roots") %>% nrow()
+  mu0.temp<-kgperm2_nona %>% filter(poolgroup2=="Fine Roots") %>% summarize(mean(carbon_kgperm2)) %>% as.numeric()
+  sd.temp<-kgperm2_nona %>% filter(poolgroup2=="Fine Roots") %>% summarize(sd(carbon_kgperm2)) %>% as.numeric()
+  mu1.temp<-mu0.temp * 1.004
+  pool.temp<-kgperm2_nona %>% filter(poolgroup2=="Fine Roots")
+  skew.temp<-skewness(pool.temp$carbon_kgperm2)
+  kurt.temp<-kurtosis(pool.temp$carbon_kgperm2)
+  output.nonnorm.fineroots<-wp.mc.t(n=n.temp, #R0=10000, R1=1000, 
+                              mu0=mu0.temp, mu1=mu1.temp, sd=sd.temp, skewness=skew.temp, kurtosis=kurt.temp, alpha=0.1, type="one.sample", alternative="two.sided")
+}
+
+{n.temp<-kgperm2_nona %>% filter(poolgroup2=="Belowground Detritus") %>% nrow()
+  mu0.temp<-kgperm2_nona %>% filter(poolgroup2=="Belowground Detritus") %>% summarize(mean(carbon_kgperm2)) %>% as.numeric()
+  sd.temp<-kgperm2_nona %>% filter(poolgroup2=="Belowground Detritus") %>% summarize(sd(carbon_kgperm2)) %>% as.numeric()
+  mu1.temp<-mu0.temp * 1.004
+  pool.temp<-kgperm2_nona %>% filter(poolgroup2=="Belowground Detritus")
+  skew.temp<-skewness(pool.temp$carbon_kgperm2)
+  kurt.temp<-kurtosis(pool.temp$carbon_kgperm2)
+  output.nonnorm.BGdetritus<-wp.mc.t(n=n.temp, #R0=10000, R1=1000, 
+                              mu0=mu0.temp, mu1=mu1.temp, sd=sd.temp, skewness=skew.temp, kurtosis=kurt.temp, alpha=0.1, type="one.sample", alternative="two.sided")
+}
+
+{n.temp<-kgperm2_nona %>% filter(poolgroup2=="Mineral Soil") %>% nrow()
+  mu0.temp<-kgperm2_nona %>% filter(poolgroup2=="Mineral Soil") %>% summarize(mean(carbon_kgperm2)) %>% as.numeric()
+  sd.temp<-kgperm2_nona %>% filter(poolgroup2=="Mineral Soil") %>% summarize(sd(carbon_kgperm2)) %>% as.numeric()
+  mu1.temp<-mu0.temp * 1.004
+  pool.temp<-kgperm2_nona %>% filter(poolgroup2=="Mineral Soil")
+  skew.temp<-skewness(pool.temp$carbon_kgperm2)
+  kurt.temp<-kurtosis(pool.temp$carbon_kgperm2)
+  output.nonnorm.soc<-wp.mc.t(n=n.temp, R0=10000, R1=1000, 
+                                mu0=mu0.temp, mu1=mu1.temp, sd=sd.temp, skewness=skew.temp, kurtosis=kurt.temp, alpha=0.1, type="one.sample", alternative="two.sided")
+}
+
+
+
+montecarlo.powers<-rbind(output.nonnorm.pile, #output.nonnorm.downdead, 
+                         output.nonnorm.cwd, output.nonnorm.FFO, output.nonnorm.coarseroots, output.nonnorm.fineroots, 
+                         output.nonnorm.BGdetritus, output.nonnorm.soc)
+montecarlo.powers<-as.data.frame(montecarlo.powers)
+montecarlo.powers$poolgroup2<-poolgroup2.list
+montecarlo.powers$R0<-100000
+montecarlo.powers$R1<-1000
+power.df<-tibble(pool=poolgroup2.list,
+       samplesize=unlist(t.test.powers$n),
+       mean=unlist(montecarlo.powers$mu0), 
+       mean1.004=unlist(montecarlo.powers$mu1),
+       skewness=unlist(montecarlo.powers$skewness), 
+       kurtosis=unlist(montecarlo.powers$kurtosis),
+       sd=unlist(montecarlo.powers$sd), 
+       cohensd=unlist(t.test.powers$d),
+       alpha=unlist(t.test.powers$sig.level), 
+       ttest.power=unlist(t.test.powers$power), 
+       montecarlo.power=unlist(montecarlo.powers$power), 
+       mcR0=montecarlo.powers$R0, 
+       mcR1=montecarlo.powers$R1)
