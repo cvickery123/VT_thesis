@@ -184,3 +184,46 @@ power.df.L %>% mutate(across(pool, factor, levels=poolgroup2.list)) %>% ggplot()
   scale_y_discrete(labels=c("Monte Carlo","T Test"))
 
 write.csv(power.df, "montecarlo.vs.ttest.powerdf.csv")
+
+
+###GO INTO THE LAB TO DO THIS -- I AM CURIOUS
+# output.norm6<-list()
+# powerrangers6<-NULL
+# powerrangers.nonnorm6<-NULL
+# for(a in alpha.list2){
+#   for(p in poolgroup2.list){
+#       #statistics for tests
+#       #normal
+#       n.temp<-kgperm2_nona %>% filter(poolgroup2==p) %>% nrow()
+#       mu0.temp<-kgperm2_nona %>% filter(poolgroup2==p) %>% summarize(mean(carbon_kgperm2)) %>% as.numeric()
+#       sd.temp<-kgperm2_nona %>% filter(poolgroup2==p) %>% summarize(sd(carbon_kgperm2)) %>% as.numeric()
+#       mu1.temp<-mu0.temp * 1.004
+#       d.temp<-(mu1.temp-mu0.temp)/sd.temp
+#       
+#       pool.temp<-kgperm2_nona %>% filter(poolgroup2==p)
+#       skew.temp<-skewness(pool.temp$carbon_kgperm2)
+#       kurt.temp<-kurtosis(pool.temp$carbon_kgperm2)
+#       
+#       #tests
+#       output.norm6[[p]]<-pwr.t.test(n=n.temp, d=d.temp, sig.level=a, power=NULL, type="one.sample", alternative="two.sided")
+# 
+#       output.nonnorm6<-wp.mc.t(n=n.temp, #R0=10000, R1=1000, 
+#                                    mu0=mu0.temp, mu1=mu1.temp, sd=sd.temp, skewness=skew.temp, kurtosis=kurt.temp, alpha=a, type="one.sample", alternative="two.sided")
+#       
+#       
+#     }
+#     pool.powerrange<-data.frame(do.call(rbind,output.norm6))
+#     pool.powerrange$poolgroup2<-poolgroup2.list
+#     powerrangers6<-rbind(powerrangers6, pool.powerrange)
+#     
+#     powerrangers.nonnorm6<-rbind(powerrangers.nonnorm6, output.nonnorm6)
+#     powerrangers.nonnorm6$poolgroup2<-poolgroup2.list
+#   }
+# powerrangers6<-powerrangers6 %>% unnest(cols = c(n, d, sig.level, power, alternative, note, method, poolgroup2))
+# powerrangers6.pretty<-powerrangers6 %>% dplyr::select(c("sig.level", "poolgroup2", "power", "n"))
+# powerrangers6.pretty.w<-powerrangers6.pretty %>% 
+#   pivot_wider(id_cols = poolgroup2,
+#               names_from = sig.level, values_from = power, 
+#               names_prefix = "alpha=")
+# write.csv(powerrangers6.pretty.w, "minimumdetectablepower.csv") #why are powers essentially the same as significant levels?
+
